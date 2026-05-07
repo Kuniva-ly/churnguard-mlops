@@ -22,7 +22,6 @@ COPY --from=builder /install /usr/local
 
 COPY main.py .
 COPY src/ ./src/
-COPY models/ ./models/
 
 RUN chown -R app:app /app
 
