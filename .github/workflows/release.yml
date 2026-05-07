@@ -50,17 +50,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Bonus — Conventional Commits release notes
-      - name: Generate changelog (git-cliff)
-        id: cliff
-        uses: orhun/git-cliff-action@v3
-        with:
-          args: --latest --strip header
-        env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          body: ${{ steps.cliff.outputs.content }}
+          generate_release_notes: true
