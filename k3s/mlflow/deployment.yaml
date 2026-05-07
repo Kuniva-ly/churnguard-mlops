@@ -28,6 +28,9 @@ spec:
             - --serve-artifacts
             - --artifacts-destination
             - /mlflow/artifacts
+          env:
+            - name: MLFLOW_SERVER_ALLOWED_HOSTS
+              value: "*"
           ports:
             - containerPort: 5000
           volumeMounts:
@@ -50,9 +53,6 @@ spec:
             requests:
               memory: "256Mi"
               cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
       volumes:
         - name: mlflow-data
           persistentVolumeClaim:

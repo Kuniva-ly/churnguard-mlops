@@ -11,7 +11,7 @@ echo " ChurnGuard - Deploiement k3s"
 # 1. Namespace
 echo ""
 echo "[1/5] Creation du namespace..."
-k3s kubectl apply -f k8s/namespace.yaml
+k3s kubectl apply -f k3s/namespace.yaml
 
 # 2. Copie du CSV sur le noeud
 echo ""
@@ -23,9 +23,9 @@ echo "      CSV copie -> $DATA_PATH/telco_churn.csv"
 # 3. MLflow
 echo ""
 echo "[3/5] Deploiement MLflow..."
-k3s kubectl apply -f k8s/mlflow/pvc.yaml
-k3s kubectl apply -f k8s/mlflow/deployment.yaml
-k3s kubectl apply -f k8s/mlflow/service.yaml
+k3s kubectl apply -f k3s/mlflow/pvc.yaml
+k3s kubectl apply -f k3s/mlflow/deployment.yaml
+k3s kubectl apply -f k3s/mlflow/service.yaml
 
 echo "      Attente MLflow ready..."
 k3s kubectl wait --namespace "$NAMESPACE" \
@@ -38,7 +38,7 @@ echo ""
 echo "[4/5] Lancement du trainer..."
 # Supprime l'ancien job si existe
 k3s kubectl delete job churnguard-trainer -n "$NAMESPACE" --ignore-not-found
-k3s kubectl apply -f k8s/trainer/job.yaml
+k3s kubectl apply -f k3s/trainer/job.yaml
 
 echo "      Attente fin du training..."
 k3s kubectl wait --namespace "$NAMESPACE" \
@@ -50,10 +50,10 @@ echo "      Training termine !"
 # 5. API
 echo ""
 echo "[5/5] Deploiement de l'API..."
-k3s kubectl apply -f k8s/api/secret.yaml
-k3s kubectl apply -f k8s/api/deployment.yaml
-k3s kubectl apply -f k8s/api/service.yaml
-k3s kubectl apply -f k8s/api/ingress.yaml
+k3s kubectl apply -f k3s/api/secret.yaml
+k3s kubectl apply -f k3s/api/deployment.yaml
+k3s kubectl apply -f k3s/api/service.yaml
+k3s kubectl apply -f k3s/api/ingress.yaml
 
 echo "      Attente API ready..."
 k3s kubectl wait --namespace "$NAMESPACE" \
