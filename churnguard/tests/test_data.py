@@ -1,5 +1,8 @@
-"""Tests unitaires pour le module load_data."""
+"""Tests unitaires pour le module load_data et download_data."""
 from __future__ import annotations
+
+import hashlib
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -89,3 +92,55 @@ def test_load_data_target_binary(telco_csv):
     """La cible y ne contient que des valeurs 0 et 1."""
     _, y = load_data(telco_csv)
     assert set(y.unique()).issubset({0, 1})
+
+
+# --- Tests download_data ---
+
+def test_sha256_of(tmp_path):
+    """sha256_of retourne le bon digest SHA-256."""
+    import src.scripts.download_data as dd
+    content = b"hello churnguard"
+    f = tmp_path / "file.bin"
+    f.write_bytes(content)
+    assert dd.sha256_of(f) == hashlib.sha256(content).hexdigest()
+
+
+def test_download_skips_valid_file(tmp_path, monkeypatch):
+    """download() ne re-télécharge pas si le fichier est déjà valide."""
+    import src.scripts.download_data as dd
+    dest = tmp_path / "telco_churn.csv"
+    dest.write_bytes(b"fake")
+    monkeypatch.setattr(dd, "DEST", dest)
+    monkeypatch.setattr(dd, "sha256_of", lambda p: dd.EXPECTED_SHA256)
+    result = dd.download()
+    assert result == dest
+
+
+def test_download_redownloads_bad_local_checksum(tmp_path, monkeypatch):
+    """download() re-télécharge si le checksum local ne correspond pas."""
+    import src.scripts.download_data as dd
+    dest = tmp_path / "telco_churn.csv"
+    dest.write_bytes(b"corrupted")
+    monkeypatch.setattr(dd, "DEST", dest)
+
+    mock_resp = MagicMock()
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+    mock_resp.read.return_value = b"wrong"
+
+    with patch("urllib.request.urlopen", return_value=mock_resp):
+        with pytest.raises(SystemExit) as exc:
+            dd.download()
+    assert exc.value.code == 2
+
+
+def test_download_exits_on_network_error(tmp_path, monkeypatch):
+    """download() quitte avec code 1 si le réseau échoue."""
+    import src.scripts.download_data as dd
+    dest = tmp_path / "telco_churn.csv"
+    monkeypatch.setattr(dd, "DEST", dest)
+
+    with patch("urllib.request.urlopen", side_effect=OSError("network error")):
+        with pytest.raises(SystemExit) as exc:
+            dd.download()
+    assert exc.value.code == 1
