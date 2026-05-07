@@ -19,6 +19,7 @@ COPY --from=builder /install /usr/local
 
 COPY src/ ./src/
 
-RUN mkdir -p /models /app/data /mlflow/artifacts
+RUN mkdir -p /models /app/data /mlflow/artifacts \
+    && python src/scripts/download_data.py
 
 CMD ["python", "src/scripts/train.py", "--model", "all", "--best", "--output-path", "/models/best_model.pkl", "--tracking-uri", "http://mlflow:5000"]

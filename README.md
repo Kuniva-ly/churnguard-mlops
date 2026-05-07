@@ -33,7 +33,6 @@
 ### Prérequis
 
 - Docker Desktop
-- Dataset `data/telco_churn.csv` — [Kaggle Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
 
 ### Stack complète (Docker Compose)
 
@@ -73,19 +72,17 @@ pytest -v
 ### Déployer
 
 ```bash
-# 1. Copier le CSV sur le nœud
-sudo mkdir -p /opt/churnguard/data
-sudo cp churnguard/data/telco_churn.csv /opt/churnguard/data/
-
-# 2. Builder et pusher les images
+# 1. Builder et pusher les images
 docker build -f churnguard/Dockerfile -t lyagoubimohamed/churnguard:latest churnguard/
 docker build -f churnguard/Dockerfile.trainer -t lyagoubimohamed/churnguard-trainer:latest churnguard/
 docker push lyagoubimohamed/churnguard:latest
 docker push lyagoubimohamed/churnguard-trainer:latest
 
-# 3. Déployer
+# 2. Déployer
 bash k3s/deploy.sh
 ```
+
+> Le dataset Telco CSV est téléchargé automatiquement depuis le repo IBM lors du build de l'image trainer — aucune copie manuelle nécessaire.
 
 ### Accéder à l'API
 
@@ -170,7 +167,8 @@ churnguard-mlops/
 │   │       ├── train.py           # entraînement + MLflow tracking
 │   │       ├── evaluate.py        # métriques d'évaluation
 │   │       ├── register_model.py  # enregistrement dans le registry
-│   │       └── load_data.py       # chargement et préparation des données
+│   │       ├── load_data.py       # chargement et préparation des données
+│   │       └── download_data.py   # téléchargement auto du CSV IBM (SHA-256 vérifié)
 │   └── tests/                     # 27 tests, couverture > 70%
 ├── k3s/                           # manifests Kubernetes
 │   ├── deploy.sh                  # script de déploiement automatisé
@@ -245,8 +243,9 @@ pytest -v --cov=src --cov-report=term-missing
 
 **Telco Customer Churn** — IBM Sample Data, 7 043 clients, 21 colonnes.
 
-- Source : [Kaggle — Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
-- Le CSV n'est pas commité (`.gitignore`)
+- Source : repo public IBM [`telco-customer-churn-on-icp4d`](https://github.com/IBM/telco-customer-churn-on-icp4d)
+- Le CSV est téléchargé automatiquement par `src/scripts/download_data.py` au build de l'image trainer (intégrité vérifiée par SHA-256)
+- Le CSV n'est pas commité dans le repo (`.gitignore`)
 
 ---
 

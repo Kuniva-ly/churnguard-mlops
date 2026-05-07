@@ -26,10 +26,6 @@ spec:
               value: "http://mlflow:5000"
             - name: MODEL_NAME
               value: "churnguard"
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-              readOnly: true
           resources:
             requests:
               memory: "512Mi"
@@ -37,8 +33,3 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "2000m"
-      volumes:
-        - name: data
-          hostPath:
-            path: /opt/churnguard/data
-            type: Directory
