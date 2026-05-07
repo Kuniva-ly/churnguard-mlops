@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import argparse
-
+import pickle
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
-import pickle
-
-import pandas as pd
 import mlflow
+import pandas as pd
 from mlflow import MlflowClient
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
@@ -79,7 +79,6 @@ def train_with_mlflow(
     register: bool = False,
 ) -> Pipeline:
     """Entraîne un modèle, logue dans MLflow et optionnellement l'enregistre dans le Registry."""
-    import mlflow
     import mlflow.sklearn
     from mlflow.models.signature import infer_signature
 
@@ -96,7 +95,6 @@ def train_with_mlflow(
         mlflow.log_param("model_type", cls.__name__)
         mlflow.log_param("test_size", test_size)
 
-        import subprocess, sys as _sys
         try:
             commit = subprocess.check_output(
                 ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
@@ -104,13 +102,15 @@ def train_with_mlflow(
             mlflow.set_tag("git_commit", commit)
         except Exception:
             pass
-        mlflow.set_tag("python_version", _sys.version.split()[0])
+        mlflow.set_tag("python_version", sys.version.split()[0])
 
         model = train_model(X_train, y_train, model_key, params)
         metrics = compute_metrics(model, X_test, y_test)
         mlflow.log_metrics(metrics)
 
-        signature = infer_signature(X_train.iloc[:5], model.predict_proba(X_train.iloc[:5])[:, 1])
+        signature = infer_signature(
+            X_train.iloc[:5], model.predict_proba(X_train.iloc[:5])[:, 1]
+        )
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
@@ -141,7 +141,7 @@ if __name__ == "__main__":  # pragma: no cover
     )
     parser.add_argument(
         "--best", action="store_true",
-        help="Avec --model all : enregistre automatiquement le modele avec le meilleur ROC-AUC."
+        help="Avec --model all : enregistre le modele avec le meilleur ROC-AUC."
     )
     parser.add_argument("--tracking-uri", default="http://localhost:5000")
     args = parser.parse_args()
@@ -151,9 +151,6 @@ if __name__ == "__main__":  # pragma: no cover
     keys = ["lr", "rf", "gbt"] if args.model == "all" else [args.model]
 
     if args.best and len(keys) > 1:
-        # Entraîner tous les modèles sans enregistrer, collecter les run_ids et métriques
-
-
         run_ids: dict[str, str] = {}
         roc_aucs: dict[str, float] = {}
         trained_models: dict[str, Any] = {}
@@ -166,7 +163,6 @@ if __name__ == "__main__":  # pragma: no cover
                 test_size=args.test_size,
                 register=False,
             )
-            # Récupérer le dernier run de l'expérience pour ce modèle
             exp = mlflow.get_experiment_by_name("churnguard")
             runs = mlflow.search_runs(
                 experiment_ids=[exp.experiment_id],
@@ -179,16 +175,15 @@ if __name__ == "__main__":  # pragma: no cover
                 roc_aucs[key] = runs.iloc[0]["metrics.roc_auc"]
 
         best_key = max(roc_aucs, key=lambda k: roc_aucs[k])
-        print(f"\n[ok] Meilleur modele : {RUN_NAMES[best_key]} (ROC-AUC={roc_aucs[best_key]:.4f})")
+        best_roc = roc_aucs[best_key]
+        print(f"\n[ok] Meilleur modele : {RUN_NAMES[best_key]} (ROC-AUC={best_roc:.4f})")
 
-        # Sauvegarder le meilleur modele en local (volume partagé avec l'API)
         output_path = Path(args.output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "wb") as f:
             pickle.dump(trained_models[best_key], f)
         print(f"[ok] Modele sauvegarde : {output_path}")
 
-        # Enregistrer dans le Registry MLflow (tracking)
         client = MlflowClient()
         mv = mlflow.register_model(
             model_uri=f"runs:/{run_ids[best_key]}/model",
@@ -196,7 +191,7 @@ if __name__ == "__main__":  # pragma: no cover
         )
         client.set_registered_model_alias("churnguard", "production", mv.version)
         print(f"[ok] Modele enregistre : churnguard v{mv.version} @production")
-        print(f"[ok] MODEL_URI : models:/churnguard@production")
+        print("[ok] MODEL_URI : models:/churnguard@production")
     else:
         for key in keys:
             train_with_mlflow(

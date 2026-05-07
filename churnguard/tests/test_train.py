@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 
 from src.scripts.evaluate import compute_metrics
 from src.scripts.load_data import load_data
-from src.scripts.train import MODELS, train_model
+from src.scripts.train import train_model
 
 CSV_PATH = "data/telco_churn.csv"
 EXPECTED_METRIC_KEYS = {"accuracy", "precision", "recall", "f1", "roc_auc"}

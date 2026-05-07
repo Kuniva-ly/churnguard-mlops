@@ -8,8 +8,6 @@ import pandas as pd
 import pytest
 
 
-
-
 @pytest.fixture(scope="session")
 def synthetic_dataset() -> tuple[pd.DataFrame, pd.Series]:
     """Dataset Telco minimal (200 lignes) généré de façon déterministe."""

@@ -1,7 +1,8 @@
 """Chargeur de modèle singleton pour l'API ChurnGuard.
 
 Charge best_model.pkl une seule fois au démarrage et le met en cache en mémoire.
-Sans danger pour les requêtes concurrentes (l'artefact pickle est en lecture seule après chargement).
+Sans danger pour les requêtes concurrentes — l'artefact pickle est en lecture
+seule après chargement.
 """
 
 from __future__ import annotations
@@ -11,11 +12,11 @@ import os
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_bundle: Optional["ModelBundle"] = None
+_bundle: ModelBundle | None = None
 
 
 @dataclass
@@ -27,7 +28,7 @@ class ModelBundle:
     model: Any
 
 
-def load_bundle(model_path: str | Path | None = None) -> "ModelBundle":
+def load_bundle(model_path: str | Path | None = None) -> ModelBundle:
     """Charge le modèle depuis *model_path* et le met en cache comme bundle global.
 
     Utilise en priorité MODEL_URI (variable d'environnement), puis models/best_model.pkl.
@@ -73,6 +74,6 @@ def load_bundle(model_path: str | Path | None = None) -> "ModelBundle":
     return bundle
 
 
-def get_bundle() -> Optional[ModelBundle]:
+def get_bundle() -> ModelBundle | None:
     """Retourne le bundle actuellement chargé (None si pas encore chargé)."""
     return _bundle

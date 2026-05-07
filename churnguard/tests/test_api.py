@@ -139,8 +139,10 @@ def test_version_returns_info(client):
 def test_load_bundle_from_local_pickle(tmp_path, monkeypatch):
     """load_bundle charge un pickle local et retourne un ModelBundle valide."""
     import pickle
-    import src.api.model_loader as ml_module
+
     from sklearn.linear_model import LogisticRegression
+
+    import src.api.model_loader as ml_module
 
     original_bundle = ml_module._bundle
     try:

@@ -4,12 +4,10 @@ from __future__ import annotations
 
 import argparse
 import pickle
-import sys
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -38,15 +36,12 @@ def compute_metrics(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> dict
 
 def evaluate(csv_path: str | Path, model_path: str | Path) -> None:
     """Charge le modèle et l'évalue sur le jeu de test."""
-    # Load data
     X, y = load_data(csv_path)
 
-    # Split (same as training)
     _, X_test, _, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Load model
     model_file = Path(model_path)
     if not model_file.exists():
         raise FileNotFoundError(f"Model not found: {model_file}")

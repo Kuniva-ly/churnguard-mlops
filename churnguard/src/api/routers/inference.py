@@ -7,7 +7,7 @@ import os
 import time
 
 import pandas as pd
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
 from src.api.model_loader import get_bundle

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -91,7 +91,7 @@ class HealthResponse(BaseModel):
     model_config = {"protected_namespaces": ()}
     status: Literal["ok", "degraded"]
     model_loaded: bool
-    model_version: Optional[str] = None
+    model_version: str | None = None
 
 
 class VersionResponse(BaseModel):
@@ -99,5 +99,5 @@ class VersionResponse(BaseModel):
 
     model_config = {"protected_namespaces": ()}
     api_version: str
-    model_version: Optional[str]
+    model_version: str | None
     model_name: str
