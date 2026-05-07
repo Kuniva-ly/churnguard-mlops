@@ -1,0 +1,120 @@
+# CI/CD
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: churnguard
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('churnguard/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint (ruff)
+      run: ruff check src/ tests/
+
+    - name: Type check (mypy)
+      run: mypy src/ --ignore-missing-imports
+
+    - name: Run tests with coverage
+      run: |
+        pytest tests/ --cov=src --cov-fail-under=70 --cov-report=xml
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: ./churnguard
+        push: ${{ github.event_name == 'push' }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/churnguard:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan image for vulnerabilities (Trivy)
+      if: github.event_name == 'push'
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/churnguard:latest
+        format: table
+        exit-code: 1
+        severity: CRITICAL,HIGH
+
+    - name: Notify Slack on failure
+      if: failure()
+      uses: slackapi/slack-github-action@v1.27.0
+      with:
+        payload: |
+          {
+            "text": ":red_circle: *CI Failed* on `${{ github.repository }}`",
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Triggered by", "value": "${{ github.actor }}", "short": true },
+                  { "title": "Commit", "value": "${{ github.sha }}", "short": false },
+                  { "title": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+    - name: Notify Slack on success
+      if: success()
+      uses: slackapi/slack-github-action@v1.27.0
+      with:
+        payload: |
+          {
+            "text": ":white_check_mark: *CI Passed* on `${{ github.repository }}`",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Triggered by", "value": "${{ github.actor }}", "short": true },
+                  { "title": "Commit", "value": "${{ github.sha }}", "short": false },
+                  { "title": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

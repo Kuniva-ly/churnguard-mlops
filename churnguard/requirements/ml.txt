@@ -1,0 +1,3 @@
+# Dépendances runtime du pipeline d'entraînement
+-r base.txt
+

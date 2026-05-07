@@ -1,0 +1,2 @@
+# Toutes les dépendances (dev + CI)
+-r requirements/dev.txt

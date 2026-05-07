@@ -1,0 +1,62 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Git / CI
+.git/
+.gitignore
+.github/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+notebook/
+.ipynb_checkpoints/
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Données brutes
+data/
+
+# Modèles sérialisés
+models/*.pkl
+models/*.joblib
+models/*.h5
+
+# Secrets / env
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+logs/
+
+# Docs / IDE / OS
+*.md
+*.docx
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+.dockerignore
+Dockerfile.trainer

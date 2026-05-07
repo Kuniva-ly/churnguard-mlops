@@ -1,0 +1,76 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --serve-artifacts
+      --artifacts-destination /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_SERVER_ALLOWED_HOSTS=*
+    volumes:
+      - mlflow_db:/mlflow
+      - mlflow_artifacts:/mlflow/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - churnguard
+
+# Pour eviter d'appeler le local 
+  trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.trainer
+    env_file:
+      - .env
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - model_store:/models
+      - ./data:/app/data:ro
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    networks:
+      - churnguard
+
+# L'API doit attendre que le trainer ait terminé pour s'assurer que le modèle est disponible dans MLflow avant de démarrer
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MODEL_URI=models:/churnguard@production
+      - MODEL_VERSION=${MODEL_VERSION:-best_model}
+      - MODEL_NAME=${MODEL_NAME:-churnguard}
+      - API_VERSION=${API_VERSION:-1.0.0}
+      - API_LOG_LEVEL=${API_LOG_LEVEL:-INFO}
+    depends_on:
+      trainer:
+        condition: service_completed_successfully
+    volumes:
+      - model_store:/app/models:ro
+    networks:
+      - churnguard
+    restart: on-failure
+
+volumes:
+  mlflow_db:
+  mlflow_artifacts:
+  model_store:
+
+networks:
+  churnguard:
+    driver: bridge
+

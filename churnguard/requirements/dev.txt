@@ -1,0 +1,11 @@
+# Dépendances de développement et CI (tests, linting, formatting)
+-r api.txt
+-r ml.txt
+httpx
+jupyter>=1.0
+pytest>=7.0
+pytest-cov>=3.0
+black>=23.3
+ruff>=0.4
+mypy>=1.8
+flake8>=5.0

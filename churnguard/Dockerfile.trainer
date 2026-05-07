@@ -1,0 +1,24 @@
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements/ ./requirements/
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --prefix=/install -r requirements/ml.txt
+
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+ENV PYTHONPATH=/app
+
+COPY --from=builder /install /usr/local
+
+COPY src/ ./src/
+
+RUN mkdir -p /models /app/data /mlflow/artifacts
+
+CMD ["python", "src/scripts/train.py", "--model", "all", "--best", "--output-path", "/models/best_model.pkl", "--tracking-uri", "http://mlflow:5000"]
