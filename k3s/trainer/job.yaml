@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: churnguard-trainer
+  namespace: churnguard
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-mlflow
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -O- http://mlflow:5000/health; do
+                echo "Waiting for MLflow..."; sleep 5
+              done
+      containers:
+        - name: trainer
+          image: lyagoubimohamed/churnguard-trainer:latest
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow:5000"
+            - name: MODEL_NAME
+              value: "churnguard"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+      volumes:
+        - name: data
+          hostPath:
+            path: /opt/churnguard/data
+            type: Directory

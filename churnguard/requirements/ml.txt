@@ -1,3 +1,4 @@
 # Dépendances runtime du pipeline d'entraînement
 -r base.txt
+mlflow>=2.0
 

@@ -1,5 +1,6 @@
 # Dépendances runtime de l'API FastAPI
 -r base.txt
+mlflow-skinny>=2.0
 fastapi>=0.100
 uvicorn[standard]>=0.34
 
