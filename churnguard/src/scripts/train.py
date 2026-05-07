@@ -164,7 +164,9 @@ if __name__ == "__main__":  # pragma: no cover
                 register=False,
             )
             exp = mlflow.get_experiment_by_name("churnguard")
-            runs = mlflow.search_runs(
+            if exp is None:
+                raise RuntimeError("Experiment 'churnguard' not found in MLflow")
+            runs: pd.DataFrame = mlflow.search_runs(
                 experiment_ids=[exp.experiment_id],
                 filter_string=f"tags.mlflow.runName = '{RUN_NAMES[key]}'",
                 order_by=["start_time DESC"],
